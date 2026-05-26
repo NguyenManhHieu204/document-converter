@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "changelog": "- Tối ưu tốc độ chuyển file PDF\n- Fix lỗi giao diện hiển thị",
   "zip_url": "https://github.com/NguyenManhHieu204/document-converter/releases/download/v1.0.2/update.zip",
   "sha256": "sha256:7d0ca6f9bebfa3bb66cf3ff3027e74d689bda466c6ef5169c97cf8472ee13d64"
