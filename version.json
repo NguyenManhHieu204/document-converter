@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
   "changelog": "- Tối ưu tốc độ chuyển file PDF\n- Fix lỗi giao diện hiển thị",
-  "zip_url": "https://github.com/NguyenManhHieu204/document-converter.git",
-  "sha256": "MÃ_BĂM_SHA256_CỦA_FILE_ZIP_MỚI"
+  "zip_url": "https://github.com/NguyenManhHieu204/document-converter/releases/download/v1.0.1/update.zip",
+  "sha256": "0dcb4b058b4bb8344d27cd92cdfcb2835a830e2464cb9d591788befde99f72b9"
 }
