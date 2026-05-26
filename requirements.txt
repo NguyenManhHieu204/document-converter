@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pywebview
+pymupdf
+pdf2docx
+docx2pdf
+pydantic
+lxml
+numpy 
