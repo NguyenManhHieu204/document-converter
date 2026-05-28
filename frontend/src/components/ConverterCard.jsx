@@ -1,28 +1,46 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
+import { UploadCloud, FileText, FileImage, ArrowRight, Loader2 } from 'lucide-react';
 
-const ConverterCard = () => {
+const ConverterCard = ({ darkMode }) => {
   const [file, setFile] = useState(null);
-  const [convertType, setConvertType] = useState('pdf-to-word'); // 'pdf-to-word' hoặc 'word-to-pdf'
+  const [convertType, setConvertType] = useState('pdf-to-word'); 
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+    if (e.target.files.length > 0) setFile(e.target.files[0]);
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleConvert = async () => {
     if (!file) {
-      alert("Vui lòng chọn file cần chuyển đổi!");
+      Swal.fire({ icon: 'warning', title: 'Chưa chọn tệp', text: 'Vui lòng chọn tài liệu cần chuyển đổi!', confirmButtonColor: '#2563eb' });
       return;
     }
-
-    // Kiểm tra đuôi file có khớp với chế độ không
     if (convertType === 'pdf-to-word' && !file.name.toLowerCase().endsWith('.pdf')) {
-      alert("Vui lòng chọn file PDF!"); return;
+      Swal.fire({ icon: 'error', title: 'Sai định dạng', text: 'Vui lòng chọn file PDF!', confirmButtonColor: '#2563eb' });
+      return;
     }
     if (convertType === 'word-to-pdf' && !file.name.toLowerCase().endsWith('.docx') && !file.name.toLowerCase().endsWith('.doc')) {
-      alert("Vui lòng chọn file Word (.docx, .doc)!"); return;
+      Swal.fire({ icon: 'error', title: 'Sai định dạng', text: 'Vui lòng chọn file Word!', confirmButtonColor: '#2563eb' });
+      return;
     }
 
     setLoading(true);
@@ -30,81 +48,118 @@ const ConverterCard = () => {
     formData.append("file", file);
 
     try {
-      // Đồng bộ sử dụng IP 127.0.0.1 để đảm bảo độ ổn định khi giao tiếp với Backend ngầm
-      const endpoint = `http://127.0.0.1:18999/api/convert/${convertType}`;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
+      const response = await fetch(`http://127.0.0.1:18999/api/convert/${convertType}`, {
+        method: "POST", body: formData,
       });
-
       const data = await response.json();
-
       if (data.status === "success") {
-        // Gọi API yêu cầu Windows mở thư mục chứa file và highlight nó
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: 'Tài liệu đã được chuyển đổi xong.',
+          timer: 2000,
+          showConfirmButton: false
+        });
         await fetch(`http://127.0.0.1:18999/api/open-folder/${data.file_name}`);
-        
-        // Reset lại ô chọn file để tiện làm file tiếp theo
         setFile(null); 
       } else {
-        alert(data.message);
+        Swal.fire({ icon: 'error', title: 'Lỗi chuyển đổi', text: data.message, confirmButtonColor: '#2563eb' });
       }
     } catch (error) {
-      console.error("Lỗi:", error);
-      alert("Không thể kết nối đến Backend!");
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi kết nối hệ thống!',
+        text: 'Không thể kết nối đến máy chủ xử lý. Vui lòng khởi động lại ứng dụng.',
+        confirmButtonColor: '#2563eb'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white rounded-xl shadow-md overflow-hidden p-6 border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Chuyển Đổi Tài Liệu</h2>
+    <div className="w-full max-w-md mx-auto glass-card rounded-3xl p-8 relative">
       
-      {/* Nút chọn chế độ chuyển đổi */}
-      <div className="flex justify-center mb-6 space-x-4">
+      {/* Tabs chọn đuôi file - Segmented Control */}
+      <div className="flex justify-between mb-8 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl relative shadow-inner">
+        <div 
+          className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white dark:bg-slate-700 rounded-xl shadow-sm transition-transform duration-300 ease-in-out"
+          style={{ transform: convertType === 'word-to-pdf' ? 'translateX(100%)' : 'translateX(0)' }}
+        ></div>
+        
         <button 
           onClick={() => { setConvertType('pdf-to-word'); setFile(null); }}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${convertType === 'pdf-to-word' ? 'bg-blue-100 text-blue-700 border-2 border-blue-500' : 'bg-gray-100 text-gray-600 border-2 border-transparent'}`}
+          className={`flex-1 py-2.5 z-10 font-bold text-sm rounded-xl transition-colors ${convertType === 'pdf-to-word' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
-          PDF Sang Word
+          PDF to Word
         </button>
         <button 
           onClick={() => { setConvertType('word-to-pdf'); setFile(null); }}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${convertType === 'word-to-pdf' ? 'bg-blue-100 text-blue-700 border-2 border-blue-500' : 'bg-gray-100 text-gray-600 border-2 border-transparent'}`}
+          className={`flex-1 py-2.5 z-10 font-bold text-sm rounded-xl transition-colors ${convertType === 'word-to-pdf' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
-          Word Sang PDF
+          Word to PDF
         </button>
       </div>
 
-      {/* Khu vực Upload */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors relative">
+      {/* Khu vực Drag & Drop */}
+      <div 
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`relative border-2 border-dashed rounded-2xl h-56 flex flex-col items-center justify-center transition-all duration-300 ${
+          file 
+            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' 
+            : isDragging
+              ? 'border-blue-500 bg-blue-50 dark:bg-slate-800/80 scale-[1.02]'
+              : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100/50 dark:hover:bg-slate-800/60'
+        }`}
+      >
         <input 
           type="file" 
           accept={convertType === 'pdf-to-word' ? ".pdf" : ".docx,.doc"} 
           onChange={handleFileChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
         />
-        <div className="flex flex-col items-center pointer-events-none">
-          <svg className="w-12 h-12 text-blue-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-          </svg>
-          <span className="text-gray-700 font-medium">
-            {file ? `Đã chọn: ${file.name}` : `Nhấn hoặc kéo thả file ${convertType === 'pdf-to-word' ? 'PDF' : 'Word'} vào đây`}
+        
+        <div className="text-center pointer-events-none px-4 flex flex-col items-center">
+          <div className={`p-4 rounded-full mb-4 transition-colors ${file ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+            {file ? (
+              convertType === 'pdf-to-word' ? <FileText size={32} /> : <FileImage size={32} />
+            ) : (
+              <UploadCloud size={32} />
+            )}
+          </div>
+          
+          <span className={`font-semibold text-[15px] mb-1 ${file ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
+            {file ? file.name : "Kéo thả tài liệu vào đây"}
           </span>
+          {!file && <p className="text-slate-400 dark:text-slate-500 text-[13px]">hoặc click để chọn file từ máy</p>}
         </div>
       </div>
 
+      {/* Nút CHUYỂN ĐỔI */}
       <button 
         onClick={handleConvert}
         disabled={loading || !file}
-        className={`mt-6 w-full py-3 px-4 rounded-lg text-white font-bold text-lg transition-all ${
+        className={`mt-8 w-full py-4 rounded-2xl font-bold text-[15px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center ${
           loading || !file 
-            ? 'bg-blue-300 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-700 shadow-md'
+            ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none' 
+            : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-[0_10px_20px_rgba(37,99,235,0.3)] dark:shadow-[0_10px_20px_rgba(37,99,235,0.15)] hover:-translate-y-1'
         }`}
       >
-        {loading ? 'Đang xử lý...' : 'Bắt Đầu Chuyển Đổi'}
+        {loading ? (
+          <>
+            <Loader2 className="animate-spin mr-2" size={20} />
+            ĐANG XỬ LÝ...
+          </>
+        ) : (
+          <>
+            CHUYỂN ĐỔI NGAY
+            <ArrowRight size={18} className="ml-2" />
+          </>
+        )}
       </button>
+
     </div>
   );
 };
