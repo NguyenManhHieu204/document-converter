@@ -6,4 +6,5 @@ pdf2docx
 docx2pdf
 pydantic
 lxml
-numpy 
+numpy
+pandas
